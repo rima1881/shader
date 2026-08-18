@@ -1,0 +1,16 @@
+{
+  "name": "bita",
+  "version": "0.1.0",
+  "dependencies": [
+    "glfw3",
+    {
+      "name": "dawn",
+      "features": [
+        { "name": "d3d12", "platform": "windows" },
+        { "name": "metal", "platform": "osx" },
+        { "name": "vulkan", "platform": "linux" },
+        { "name": "x11", "platform": "linux" }
+      ]
+    }
+  ]
+}

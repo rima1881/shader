@@ -1,0 +1,7 @@
+#pragma once
+
+namespace shaders {
+
+inline constexpr const char* triangle_wgsl = R"wgsl(@TRIANGLE_WGSL_SOURCE@)wgsl";
+
+}  // namespace shaders
