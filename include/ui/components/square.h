@@ -8,6 +8,7 @@ struct Square {
     float x, y, width, height;
     static std::vector<float> get_vertices(const Square& square);
     static uint32_t get_vertex_count(const Square& square);
+    static std::vector<uint32_t> get_indices(const Square& square);
 };
 
 static_assert(RenderedConcept<Square>);

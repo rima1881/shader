@@ -13,6 +13,7 @@ struct UI {
     static void add_square(UI& ui, const Square& square);
     static std::vector<float> get_all_vertices(const UI& ui);
     static uint32_t get_all_vertex_count(const UI& ui);
+    static std::vector<uint32_t> get_all_indices(const UI& ui);
 };
 
 #endif // UI_UI_H

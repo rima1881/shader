@@ -1,5 +1,6 @@
 
 #include <renderer.h>
+#include <webgpu/webgpu_cpp.h>
 
 std::expected<void, RendererCreateError> Renderer::create(Renderer& renderer, GLFWwindow* window, const UI& ui, uint32_t width, uint32_t height) {
     wgpu::InstanceFeatureName timedWaitAny = wgpu::InstanceFeatureName::TimedWaitAny;
@@ -123,6 +124,7 @@ std::expected<void, RendererCreateError> Renderer::create(Renderer& renderer, GL
         },
         .primitive = {
             .topology = wgpu::PrimitiveTopology::TriangleStrip,
+            .stripIndexFormat = wgpu::IndexFormat::Uint32,
             .frontFace = wgpu::FrontFace::CCW,
             .cullMode = wgpu::CullMode::None,
         },
@@ -135,13 +137,24 @@ std::expected<void, RendererCreateError> Renderer::create(Renderer& renderer, GL
     auto vertexData = UI::get_all_vertices(ui);
     const size_t vertexDataSize = vertexData.size() * sizeof(float);
 
-    wgpu::BufferDescriptor bufferDesc{
+    wgpu::BufferDescriptor vertexBufferDesc{
         .usage = wgpu::BufferUsage::Vertex | wgpu::BufferUsage::CopyDst,
         .size = vertexDataSize
     };
 
-    renderer.vertexBuffer = renderer.device.CreateBuffer(&bufferDesc);
+    renderer.vertexBuffer = renderer.device.CreateBuffer(&vertexBufferDesc);
     renderer.queue.WriteBuffer(renderer.vertexBuffer, 0, vertexData.data(), vertexDataSize);
+
+
+    auto indexData = UI::get_all_indices(ui);
+    const size_t indexDataSize = indexData.size() * sizeof(uint32_t);
+
+    wgpu::BufferDescriptor indexBufferDesc{
+        .usage = wgpu::BufferUsage::Index | wgpu::BufferUsage::CopyDst,
+        .size = indexDataSize,
+    };
+    renderer.indexBuffer = renderer.device.CreateBuffer(&indexBufferDesc);
+    renderer.queue.WriteBuffer(renderer.indexBuffer, 0, indexData.data(), indexDataSize);
 
     return {};
 }
@@ -171,9 +184,34 @@ void Renderer::render(Renderer& renderer, const UI& ui) {
 
     wgpu::CommandEncoder encoder = renderer.device.CreateCommandEncoder();
     wgpu::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPassDesc);
+
+    auto vertexData = UI::get_all_vertices(ui);
+    auto indexData = UI::get_all_indices(ui);
+
+    // buffer is too small to hold all vertices
+    if (vertexData.size() * sizeof(float) > renderer.vertexBuffer.GetSize()) {
+        wgpu::BufferDescriptor vertexBufferDesc{
+            .usage = wgpu::BufferUsage::Vertex | wgpu::BufferUsage::CopyDst,
+            .size = vertexData.size() * sizeof(float),
+        };
+        renderer.vertexBuffer = renderer.device.CreateBuffer(&vertexBufferDesc);
+    }
+
+    if (indexData.size() * sizeof(uint32_t) > renderer.indexBuffer.GetSize()) {
+        wgpu::BufferDescriptor indexBufferDesc{
+            .usage = wgpu::BufferUsage::Index | wgpu::BufferUsage::CopyDst,
+            .size = indexData.size() * sizeof(uint32_t),
+        };
+        renderer.indexBuffer = renderer.device.CreateBuffer(&indexBufferDesc);
+    }
+
+    renderer.queue.WriteBuffer(renderer.vertexBuffer, 0, vertexData.data(), vertexData.size() * sizeof(float));
+    renderer.queue.WriteBuffer(renderer.indexBuffer, 0, indexData.data(), indexData.size() * sizeof(uint32_t));
+
     pass.SetPipeline(renderer.pipeline);
     pass.SetVertexBuffer(0, renderer.vertexBuffer);
-    pass.Draw(UI::get_all_vertex_count(ui), 1, 0, 0);
+    pass.SetIndexBuffer(renderer.indexBuffer, wgpu::IndexFormat::Uint32);
+    pass.DrawIndexed(static_cast<uint32_t>(indexData.size()), 1, 0, 0, 0);
     pass.End();
 
     wgpu::CommandBuffer commands = encoder.Finish();
@@ -187,6 +225,8 @@ void Renderer::render(Renderer& renderer, const UI& ui) {
 void Renderer::destroy(Renderer& renderer) {
     renderer.surface.Unconfigure();
     renderer.surface = nullptr;
+
+    renderer.indexBuffer = nullptr;
     renderer.vertexBuffer = nullptr;
     renderer.pipeline = nullptr;
     renderer.queue = nullptr;

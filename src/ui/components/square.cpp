@@ -17,3 +17,9 @@ std::vector<float> Square::get_vertices(const Square& square) {
 uint32_t Square::get_vertex_count(const Square& square) {
     return 4;
 }
+
+std::vector<uint32_t> Square::get_indices(const Square& square) {
+    return {
+        0, 1, 2, 3
+    };
+}
