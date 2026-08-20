@@ -25,8 +25,9 @@ std::expected<void, AppCreateError> App::create(App& app, uint32_t width, uint32
     }
 
     app.window = glfw_window;
+    UI::create(app.ui);
 
-    auto result = Renderer::create(app.renderer, app.window, width, height)
+    auto result = Renderer::create(app.renderer, app.window, app.ui, width, height)
         .transform_error([](RendererCreateError err) {
             switch (err) {
                 case RendererCreateError::FailedToCreateInstance: return AppCreateError::FailedToCreateInstance;
@@ -44,6 +45,7 @@ std::expected<void, AppCreateError> App::create(App& app, uint32_t width, uint32
         return std::unexpected(result.error());
     }
 
+
     return {};
 }
 
@@ -51,7 +53,7 @@ void App::run(App& app) {
     while (!glfwWindowShouldClose(app.window)) {
         glfwPollEvents();
 
-        Renderer::render(app.renderer);
+        Renderer::render(app.renderer, app.ui);
     }
 }
 

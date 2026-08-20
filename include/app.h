@@ -5,6 +5,7 @@
 #include <expected>
 #include <string>
 #include <renderer.h>
+#include <ui/ui.h>
 
 
 enum class AppCreateError {
@@ -18,6 +19,7 @@ enum class AppCreateError {
 
 struct App {
     Renderer renderer;
+    UI ui;
     GLFWwindow* window = nullptr;
 
     static std::expected<void, AppCreateError> create(App& app, uint32_t width, uint32_t height, std::string title);

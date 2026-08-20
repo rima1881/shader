@@ -6,6 +6,7 @@
 #include <expected>
 #include <GLFW/glfw3.h>
 #include <triangle.wgsl.h>
+#include <ui/ui.h>
 
 
 #if defined(_WIN32)
@@ -43,9 +44,11 @@ struct Renderer {
     wgpu::TextureFormat format;
     wgpu::RenderPipeline pipeline;
     wgpu::Queue queue;
+    wgpu::Buffer vertexBuffer;
 
-    static std::expected<void, RendererCreateError> create(Renderer& renderer, GLFWwindow* window, uint32_t width, uint32_t height);
-    static void render(Renderer& renderer);
+    // TODO: see if i can remove width/height
+    static std::expected<void, RendererCreateError> create(Renderer& renderer, GLFWwindow* window, const UI& ui, uint32_t width, uint32_t height);
+    static void render(Renderer& renderer, const UI& ui);
     static void destroy(Renderer& renderer);
 };
 

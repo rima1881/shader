@@ -1,7 +1,7 @@
 
 #include <renderer.h>
 
-std::expected<void, RendererCreateError> Renderer::create(Renderer& renderer, GLFWwindow* window, uint32_t width, uint32_t height) {
+std::expected<void, RendererCreateError> Renderer::create(Renderer& renderer, GLFWwindow* window, const UI& ui, uint32_t width, uint32_t height) {
     wgpu::InstanceFeatureName timedWaitAny = wgpu::InstanceFeatureName::TimedWaitAny;
 
     wgpu::InstanceDescriptor instanceDesc{
@@ -101,10 +101,25 @@ std::expected<void, RendererCreateError> Renderer::create(Renderer& renderer, GL
         .targets = &colorTarget,
     };
 
+    wgpu::VertexAttribute positionAttrib{
+        .format = wgpu::VertexFormat::Float32x2,
+        .offset = 0,
+        .shaderLocation = 0,
+    };
+
+    wgpu::VertexBufferLayout vertexLayout{
+        .stepMode = wgpu::VertexStepMode::Vertex,
+        .arrayStride = 2 * sizeof(float),   // 8 bytes between vertices
+        .attributeCount = 1,
+        .attributes = &positionAttrib,
+    };
+
     wgpu::RenderPipelineDescriptor pipelineDesc{
         .vertex = {
             .module = shaderModule,
             .entryPoint = "vs_main",
+            .bufferCount = 1,
+            .buffers = &vertexLayout,
         },
         .primitive = {
             .topology = wgpu::PrimitiveTopology::TriangleStrip,
@@ -117,10 +132,21 @@ std::expected<void, RendererCreateError> Renderer::create(Renderer& renderer, GL
     renderer.pipeline = renderer.device.CreateRenderPipeline(&pipelineDesc);
     renderer.queue = renderer.device.GetQueue();
 
+    auto vertexData = UI::get_all_vertices(ui);
+    const size_t vertexDataSize = vertexData.size() * sizeof(float);
+
+    wgpu::BufferDescriptor bufferDesc{
+        .usage = wgpu::BufferUsage::Vertex | wgpu::BufferUsage::CopyDst,
+        .size = vertexDataSize
+    };
+
+    renderer.vertexBuffer = renderer.device.CreateBuffer(&bufferDesc);
+    renderer.queue.WriteBuffer(renderer.vertexBuffer, 0, vertexData.data(), vertexDataSize);
+
     return {};
 }
 
-void Renderer::render(Renderer& renderer) {
+void Renderer::render(Renderer& renderer, const UI& ui) {
     wgpu::SurfaceTexture surfaceTexture;
     renderer.surface.GetCurrentTexture(&surfaceTexture);
 
@@ -146,7 +172,8 @@ void Renderer::render(Renderer& renderer) {
     wgpu::CommandEncoder encoder = renderer.device.CreateCommandEncoder();
     wgpu::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPassDesc);
     pass.SetPipeline(renderer.pipeline);
-    pass.Draw(4, 1, 0, 0);
+    pass.SetVertexBuffer(0, renderer.vertexBuffer);
+    pass.Draw(UI::get_all_vertex_count(ui), 1, 0, 0);
     pass.End();
 
     wgpu::CommandBuffer commands = encoder.Finish();
@@ -160,7 +187,7 @@ void Renderer::render(Renderer& renderer) {
 void Renderer::destroy(Renderer& renderer) {
     renderer.surface.Unconfigure();
     renderer.surface = nullptr;
-
+    renderer.vertexBuffer = nullptr;
     renderer.pipeline = nullptr;
     renderer.queue = nullptr;
     renderer.device = nullptr;

@@ -28,6 +28,9 @@ add_executable(bita
     src/main.cpp
     src/app.cpp
     src/renderer.cpp
+    src/ui/ui.cpp
+    src/ui/rendered.cpp
+    src/ui/components/square.cpp
 )
 
 target_include_directories(bita PRIVATE include ${CMAKE_CURRENT_BINARY_DIR})

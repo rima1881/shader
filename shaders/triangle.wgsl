@@ -1,12 +1,6 @@
 @vertex
-fn vs_main(@builtin(vertex_index) vertex_index: u32) -> @builtin(position) vec4<f32> {
-    var positions = array<vec2<f32>, 4>(
-        vec2<f32>(-0.5, 0.5),
-        vec2<f32>( 0.5,  0.5),
-        vec2<f32>(-0.5, -0.5),
-        vec2<f32>( 0.5, -0.5),
-    );
-    return vec4<f32>(positions[vertex_index], 0.0, 1.0);
+fn vs_main(@location(0) position: vec2<f32>) -> @builtin(position) vec4<f32> {
+    return vec4<f32>(position, 0.0, 1.0);
 }
 
 @fragment
