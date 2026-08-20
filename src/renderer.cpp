@@ -107,7 +107,7 @@ std::expected<void, RendererCreateError> Renderer::create(Renderer& renderer, GL
             .entryPoint = "vs_main",
         },
         .primitive = {
-            .topology = wgpu::PrimitiveTopology::TriangleList,
+            .topology = wgpu::PrimitiveTopology::TriangleStrip,
             .frontFace = wgpu::FrontFace::CCW,
             .cullMode = wgpu::CullMode::None,
         },
@@ -146,7 +146,7 @@ void Renderer::render(Renderer& renderer) {
     wgpu::CommandEncoder encoder = renderer.device.CreateCommandEncoder();
     wgpu::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPassDesc);
     pass.SetPipeline(renderer.pipeline);
-    pass.Draw(6, 1, 0, 0);
+    pass.Draw(4, 1, 0, 0);
     pass.End();
 
     wgpu::CommandBuffer commands = encoder.Finish();

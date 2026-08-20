@@ -1,13 +1,9 @@
 @vertex
 fn vs_main(@builtin(vertex_index) vertex_index: u32) -> @builtin(position) vec4<f32> {
-    var positions = array<vec2<f32>, 6>(
+    var positions = array<vec2<f32>, 4>(
         vec2<f32>(-0.5, 0.5),
         vec2<f32>( 0.5,  0.5),
         vec2<f32>(-0.5, -0.5),
-
-
-        vec2<f32>( 0.5,  0.5),  // vertex 3: top-right
-        vec2<f32>(-0.5, -0.5),  // vertex 4: bottom-left
         vec2<f32>( 0.5, -0.5),
     );
     return vec4<f32>(positions[vertex_index], 0.0, 1.0);
