@@ -156,6 +156,15 @@ std::expected<void, RendererCreateError> Renderer::create(Renderer& renderer, GL
     renderer.indexBuffer = renderer.device.CreateBuffer(&indexBufferDesc);
     renderer.queue.WriteBuffer(renderer.indexBuffer, 0, indexData.data(), indexDataSize);
 
+    auto colorData = UI::get_all_colors(ui);
+    const size_t colorDataSize = colorData.size() * sizeof(float);
+
+    wgpu::BufferDescriptor colorBufferDesc{
+        .usage = wgpu::BufferUsage::Uniform | wgpu::BufferUsage::CopyDst,
+        .size = colorDataSize,
+    };
+    renderer.colorBuffer = renderer.device.CreateBuffer(&colorBufferDesc);
+
     return {};
 }
 
@@ -205,6 +214,14 @@ void Renderer::render(Renderer& renderer, const UI& ui) {
         renderer.indexBuffer = renderer.device.CreateBuffer(&indexBufferDesc);
     }
 
+    if (colorDataSize > renderer.colorBuffer.GetSize()) {
+        wgpu::BufferDescriptor colorBufferDesc{
+            .usage = wgpu::BufferUsage::Uniform | wgpu::BufferUsage::CopyDst,
+            .size = colorDataSize,
+        };
+        renderer.colorBuffer = renderer.device.CreateBuffer(&colorBufferDesc);
+    }
+
     renderer.queue.WriteBuffer(renderer.vertexBuffer, 0, vertexData.data(), vertexData.size() * sizeof(float));
     renderer.queue.WriteBuffer(renderer.indexBuffer, 0, indexData.data(), indexData.size() * sizeof(uint32_t));
 
@@ -226,6 +243,7 @@ void Renderer::destroy(Renderer& renderer) {
     renderer.surface.Unconfigure();
     renderer.surface = nullptr;
 
+    renderer.colorBuffer = nullptr;
     renderer.indexBuffer = nullptr;
     renderer.vertexBuffer = nullptr;
     renderer.pipeline = nullptr;

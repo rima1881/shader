@@ -46,6 +46,7 @@ struct Renderer {
     wgpu::Queue queue;
     wgpu::Buffer vertexBuffer;
     wgpu::Buffer indexBuffer;
+    wgpu::Buffer uniformBuffer;
 
     // TODO: see if i can remove width/height
     static std::expected<void, RendererCreateError> create(Renderer& renderer, GLFWwindow* window, const UI& ui, uint32_t width, uint32_t height);

@@ -23,3 +23,7 @@ std::vector<uint32_t> Square::get_indices(const Square& square) {
         0, 1, 2, 3
     };
 }
+
+std::array<uint8_t, 4> Square::color(const Square& square) {
+    return square.color;
+}
