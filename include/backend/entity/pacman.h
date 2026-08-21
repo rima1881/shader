@@ -9,9 +9,10 @@ struct Pacman {
     Position pos;
 
     static bool move(Pacman& pacman, Position pos);
+    static Position get_position(const Pacman& pacman);
 };
 
 
-static_assert(MovingConcept<Pacman>);
+static_assert(EntityConcept<Pacman>);
 
 #endif

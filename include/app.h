@@ -6,7 +6,7 @@
 #include <string>
 #include <renderer.h>
 #include <ui/ui.h>
-
+#include <backend/backend.h>
 
 enum class AppCreateError {
     FailedToInitializeGLFW,
@@ -18,6 +18,8 @@ enum class AppCreateError {
 };
 
 struct App {
+
+    Backend backend;
     Renderer renderer;
     UI ui;
     GLFWwindow* window = nullptr;
