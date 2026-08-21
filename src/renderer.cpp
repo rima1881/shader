@@ -54,9 +54,15 @@ std::expected<void, RendererCreateError> Renderer::create(Renderer& renderer, GL
         return std::unexpected(RendererCreateError::FailedToCreateAdapter);
     }
 
+    wgpu::DeviceDescriptor deviceDesc{};
+    deviceDesc.SetUncapturedErrorCallback([](const wgpu::Device&, wgpu::ErrorType type, wgpu::StringView message) {
+        fprintf(stderr, "Uncaptured WebGPU error (%d): %.*s\n",
+                static_cast<int>(type), static_cast<int>(message.length), message.data);
+    });
+
     bool deviceResult = false;
     auto deviceFuture = renderer.adapter.RequestDevice(
-        nullptr,
+        &deviceDesc,
         wgpu::CallbackMode::WaitAnyOnly,
         [&](wgpu::RequestDeviceStatus status, wgpu::Device device, wgpu::StringView message) {
             if (status == wgpu::RequestDeviceStatus::Success) {
@@ -163,7 +169,7 @@ std::expected<void, RendererCreateError> Renderer::create(Renderer& renderer, GL
         .usage = wgpu::BufferUsage::Uniform | wgpu::BufferUsage::CopyDst,
         .size = colorDataSize,
     };
-    renderer.colorBuffer = renderer.device.CreateBuffer(&colorBufferDesc);
+    renderer.uniformBuffer = renderer.device.CreateBuffer(&colorBufferDesc);
 
     return {};
 }
@@ -196,6 +202,7 @@ void Renderer::render(Renderer& renderer, const UI& ui) {
 
     auto vertexData = UI::get_all_vertices(ui);
     auto indexData = UI::get_all_indices(ui);
+    auto colorData = UI::get_all_colors(ui);
 
     // buffer is too small to hold all vertices
     if (vertexData.size() * sizeof(float) > renderer.vertexBuffer.GetSize()) {
@@ -214,19 +221,38 @@ void Renderer::render(Renderer& renderer, const UI& ui) {
         renderer.indexBuffer = renderer.device.CreateBuffer(&indexBufferDesc);
     }
 
-    if (colorDataSize > renderer.colorBuffer.GetSize()) {
+    if (colorData.size() * sizeof(float) > renderer.uniformBuffer.GetSize()) {
         wgpu::BufferDescriptor colorBufferDesc{
             .usage = wgpu::BufferUsage::Uniform | wgpu::BufferUsage::CopyDst,
-            .size = colorDataSize,
+            .size = colorData.size() * sizeof(float),
         };
-        renderer.colorBuffer = renderer.device.CreateBuffer(&colorBufferDesc);
+        renderer.uniformBuffer = renderer.device.CreateBuffer(&colorBufferDesc);
     }
+
+    wgpu::BindGroupLayout bindGroupLayout = renderer.pipeline.GetBindGroupLayout(0);
+
+    wgpu::BindGroupEntry bindGroupEntry{
+        .binding = 0,
+        .buffer = renderer.uniformBuffer,
+        .offset = 0,
+        .size = colorData.size() * sizeof(float),
+    };
+
+    wgpu::BindGroupDescriptor bindGroupDesc{
+        .layout = bindGroupLayout,
+        .entryCount = 1,
+        .entries = &bindGroupEntry,
+    };
+    wgpu::BindGroup bindGroup = renderer.device.CreateBindGroup(&bindGroupDesc);
 
     renderer.queue.WriteBuffer(renderer.vertexBuffer, 0, vertexData.data(), vertexData.size() * sizeof(float));
     renderer.queue.WriteBuffer(renderer.indexBuffer, 0, indexData.data(), indexData.size() * sizeof(uint32_t));
+    renderer.queue.WriteBuffer(renderer.uniformBuffer, 0, colorData.data(), colorData.size() * sizeof(float));
 
+    pass.SetBindGroup(0, bindGroup);
     pass.SetPipeline(renderer.pipeline);
     pass.SetVertexBuffer(0, renderer.vertexBuffer);
+
     pass.SetIndexBuffer(renderer.indexBuffer, wgpu::IndexFormat::Uint32);
     pass.DrawIndexed(static_cast<uint32_t>(indexData.size()), 1, 0, 0, 0);
     pass.End();
@@ -243,7 +269,7 @@ void Renderer::destroy(Renderer& renderer) {
     renderer.surface.Unconfigure();
     renderer.surface = nullptr;
 
-    renderer.colorBuffer = nullptr;
+    renderer.uniformBuffer = nullptr;
     renderer.indexBuffer = nullptr;
     renderer.vertexBuffer = nullptr;
     renderer.pipeline = nullptr;

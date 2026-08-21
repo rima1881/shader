@@ -1,20 +1,26 @@
+#include "ui/components/square.h"
+#include "ui/rendered.h"
 #include <ui/ui.h>
 
 void UI::create(UI& ui) {
-    add_square(ui, Square{ .x =  -0.5f, .y= -0.5f, .width = 1.0f, .height = 1.0f });
-    add_square(ui, Square{ .x = -0.9f, .y = 0.3f, .width = 0.3f, .height = 0.3f });
+    add_square(ui, Square{
+        .x =  -0.5f,
+        .y= -0.5f,
+        .width = 1.0f,
+        .height = 1.0f,
+        .color = {255, 0, 0, 255},
+    });
+    add_square(ui, Square{
+        .x = -0.9f,
+        .y = 0.3f,
+        .width = 0.3f,
+        .height = 0.3f,
+        .color = {0, 255, 0, 255},
+    });
 }
 
 void UI::add_square(UI& ui, const Square& square) {
     ui.components.push_back(square);
-}
-
-uint32_t UI::get_all_vertex_count(const UI& ui) {
-    uint32_t count = 0;
-    for (const auto& comp : ui.components) {
-        count += rendered::get_vertex_count(comp);
-    }
-    return count;
 }
 
 std::vector<uint32_t> UI::get_all_indices(const UI& ui) {
@@ -35,11 +41,23 @@ std::vector<uint32_t> UI::get_all_indices(const UI& ui) {
     return data;
 }
 
-std::vector<float> UI::get_all_colors(const UI& ui) {
+std::vector<float> UI::get_all_vertices(const UI& ui) {
     std::vector<float> data;
     for (const auto& comp : ui.components) {
-        auto colors = rendered::get_colors(comp);
-        data.insert(data.end(), colors.begin(), colors.end()); // TODO: probably wrong
+        auto vertices = rendered::get_vertices(comp);
+        data.insert(data.end(), vertices.begin(), vertices.end());
     }
+    return data;
+}
+
+std::vector<float> UI::get_all_colors(const UI& ui) {
+    std::vector<float> data = {1, 0, 0, 1};
+    // TODO: temporary commented out
+    // for (const auto& comp : ui.components) {
+    //     auto [r, g, b, a] = rendered::get_color(comp);
+    //     for (float c : {r, g, b, a}) {
+    //         data.push_back(c / 255.0f);
+    //     }
+    // }
     return data;
 }
